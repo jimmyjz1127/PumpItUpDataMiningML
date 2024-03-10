@@ -1,0 +1,6 @@
+1. Experiment with numerical feature scaling and not scaling 
+2. Reducing high-cardinality features into fewer bins
+3. plotting the cardinality of each feature 
+4. Plotting range of numerical features 
+5. experiment with removing a certain number of features 
+6. Experiment with different types of logistic regression (saga, sag, newton-cg)

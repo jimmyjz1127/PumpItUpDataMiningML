@@ -1,0 +1,1 @@
+python part1.py ./Data/input.csv ./Data/labels.csv ./Data/test_input.csv StandardScaler TargetEncoder LogisticRegression ./Outputs/LogReg_SS_target.csv
