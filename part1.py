@@ -30,23 +30,36 @@ class DenseTransformer(TransformerMixin):
 class Model():
 
     def __init__(self, args, maxiters):
+        ''' 
+            Constructor 
+            @param (args) : command line arguments as list 
+            @param (maxiters) : max iterations for gradient descent 
+        '''
+
+        # Extract command line arguments 
         train_input, train_labels, test_input, num_proc, cat_proc, model_type, self.prediction_output = args
 
+        # Read and prerocess train inputs, test inputs, and train labels 
         self.input = self.preprocess_data(pd.read_csv(train_input))
         self.labels = (pd.read_csv(train_labels).drop('id', axis=1))['status_group'].tolist()
 
-        self.test_input = self.preprocess_data(pd.read_csv(test_input))
+        self.test_input = pd.read_csv(test_input)
+        self.id_col = self.test_input['id'].tolist()
+        self.test_input = self.preprocess_data(self.test_input)
 
-
+        # Configure 
         num_processor = None 
         if (num_proc == 'StandardScaler'):
             num_processor = StandardScaler()
 
-        num_features = ['amount_tsh', 'gps_height', 'longitude','latitude', 'population', 'construction_year','days_since_recording']
+        # Configure which features are numerical and which are not
+        num_features = ['amount_tsh', 'gps_height', 'longitude','latitude', 'population', 'construction_year','years_since_construction']
         cat_features = [feature for feature in self.input.columns if feature not in num_features]
 
+        # Initialize categorical feature pre-processor 
         cat_preprocessor = self.get_cat_preprocessor(cat_proc, num_features, cat_features, num_processor)
 
+        # Initialize classifier model 
         self.model = self.get_model(model_type, cat_preprocessor, cat_proc, maxiters)
 
 
@@ -62,14 +75,19 @@ class Model():
         df.loc[condition, column_name] = 'other'
 
     def preprocess_data(self, df):
+        '''
+            Pre-processed input data - performs feature engineering 
+            @param (df) : data frame representing inputs 
+        '''
         now = datetime.now()
 
+        # Modify date_recorded column to days from now since days recorded
         df['date_recorded'] = pd.to_datetime(df['date_recorded'])
-        df['days_since_recording'] = (now - df['date_recorded']).dt.days
+        year = df['date_recorded'].dt.year 
+        df['years_since_construction'] = (year - df['construction_year'])
 
         drop_columns = ['date_recorded', 'num_private', 'id', 'wpt_name', 'subvillage']
-        for col in drop_columns:
-            df.drop(col, axis=1, inplace=True)
+        df.drop(drop_columns, axis=1, inplace=True)
 
         reduce_columns = ['ward','funder','installer', 'scheme_name']
 
@@ -81,6 +99,14 @@ class Model():
 
 
     def get_cat_preprocessor(self, cat_proc, num_features, cat_features, num_processor):
+        '''
+            For initializing the preprocessor for encoding categorical features 
+            @param (cat_proc) : String indicating type of encoding method 
+            @param (num_features) : list of string names of all numerical features 
+            @param (cat_features) : list of string names of categorical features 
+            @param (num_processor) : the numerical feature processor (None or StandardScaler())
+        '''
+        
         if cat_proc == 'OneHotEncoder':
             return ColumnTransformer(
                         transformers=[
@@ -116,6 +142,13 @@ class Model():
                 )
 
     def get_model(self, model_type, cat_preprocessor, cat_type, maxiters):
+        ''' 
+            For initializing classification model 
+            @param (model_type) : string indicating type of model 
+            @param (cat_preprocessor) : feature encoder 
+            @param (cat_type) : string indicating feature encoding type 
+            @param (maxiters) : max iterations for gradient descent
+        '''
         if model_type == 'HistGradientBoostingClassifier':
             if cat_type == 'OneHotEncoding':
                 return Pipeline(steps=[('preprocessor', cat_preprocessor),
@@ -129,38 +162,42 @@ class Model():
         elif model_type == 'LogisticRegression':
             return Pipeline(steps=[('preprocessor', cat_preprocessor),
                         ('classifier', LogisticRegression(max_iter=maxiters))])
-        elif model_type == 'RandomForrestClassifier':
+        elif model_type == 'RandomForestClassifier':
             return Pipeline(steps=[('preprocessor', cat_preprocessor),
                         ('classifier', RandomForestClassifier(max_iter=maxiters))])
         else :
             return Pipeline(steps=[('preprocessor', cat_preprocessor),
                         ('classifier', MLPClassifier(max_iter=maxiters))])
-
         
     
-    def train(self):
+    def KFoldValidation(self):
+        '''
+            Performs K-Fold Validation 
+        '''
         print('TRAINING MODEL...\n')
         kf = KFold(n_splits=5, shuffle=True, random_state=42)
         scores = cross_val_score(self.model, self.input, self.labels, cv=kf, scoring='accuracy')
         print(f'K-Fold Cross Validation [K=5] Accuracy')
-        print('========================================')
         print('     Per-fold Accuracy :', scores)
         print('     Average Accuracy :', np.mean(scores))
 
     def predict(self):
+        '''
+            Performs prediction using the test inputs and saves predictions to specified CSV file 
+        '''
         self.model.fit(self.input, self.labels)
         predictions = self.model.predict(self.test_input)
 
-        result_df = pd.DataFrame(predictions)
+        predictions = zip(self.id_col, predictions)
+        result_df = pd.DataFrame(predictions, columns=['id','status_group'])
+        result_df.to_csv(self.prediction_output, index=False)
 
-        result_df.to_csv(self.prediction_output)
-        
-        print(f'Predictions saved to {self.prediction_output}')
-        
+        print(f'\nPredictions saved to [{self.prediction_output}]')
+
 
 def main(args):
     model = Model(args, 1000) 
-    model.train()
+    model.KFoldValidation()
     model.predict()
 
     print()

@@ -1,0 +1,37 @@
+
+
+### 1. **Logistic Regression**
+- **`C`**: Inverse of regularization strength; smaller values specify stronger regularization.
+- **`penalty`**: Type of regularization applied (`'l1'`, `'l2'`, `'elasticnet'`, or `'none'`).
+- **`solver`**: Algorithm to use for optimization (`'newton-cg'`, `'lbfgs'`, `'liblinear'`, `'sag'`, `'saga'`).
+
+### 2. **Random Forest Classifier**
+- **`n_estimators`**: The number of trees in the forest.
+- **`max_depth`**: The maximum depth of the trees.
+- **`min_samples_split`**: The minimum number of samples required to split an internal node.
+- **`min_samples_leaf`**: The minimum number of samples required to be at a leaf node.
+- **`max_features`**: The number of features to consider when looking for the best split.
+
+### 3. **Support Vector Machines (SVM)**
+- **`C`**: Regularization parameter. The strength of the regularization is inversely proportional to C. Must be strictly positive.
+- **`kernel`**: Specifies the kernel type to be used in the algorithm (`'linear'`, `'poly'`, `'rbf'`, `'sigmoid'`, `'precomputed'`).
+- **`degree`** (for polynomial kernel): Degree of the polynomial kernel function.
+- **`gamma`** (for `'rbf'`, `'poly'`, and `'sigmoid'`): Kernel coefficient.
+
+### 4. **Gradient Boosting Classifiers**
+- **`n_estimators`**: The number of boosting stages to be run.
+- **`learning_rate`**: Rate at which the contribution of each tree is shrunk.
+- **`max_depth`**: Maximum depth of the individual regression estimators.
+- **`min_samples_split`**: The minimum number of samples required to split an internal node.
+
+### 5. **K-Nearest Neighbors (KNN)**
+- **`n_neighbors`**: Number of neighbors to use.
+- **`weights`**: Weight function used in prediction (`'uniform'`, `'distance'`, or [callable]).
+- **`algorithm`**: Algorithm used to compute the nearest neighbors (`'auto'`, `'ball_tree'`, `'kd_tree'`, `'brute'`).
+
+### 6. **Neural Networks (via libraries like Keras or PyTorch)**
+- Network architecture (number of layers, types of layers, number of neurons in each layer).
+- **`learning_rate`**: Step size at each iteration while moving toward a minimum of a loss function.
+- **`batch_size`**: Number of samples per gradient update.
+- **`epochs`**: Number of epochs to train the model.
+
