@@ -26,7 +26,7 @@ from argparse import Namespace
 
 
 class Model():
-    def __init__(self, train_input, train_labels, test_input,  test_labels, hyperparameters=None):
+    def __init__(self, train_input, train_labels, test_input,  test_labels, hyperparameters={}, model_type='RandomForestClassifier'):
         ''' 
         Initialize the Model object with hyperparameters.
         @param args: Command line arguments or other configurations
@@ -53,17 +53,53 @@ class Model():
                         ]), cat_features)
                     ]
                 )
+        
+        self.hyperparameters = hyperparameters 
 
-        self.hyperparameters = hyperparameters or {}
-
-        self.model = Pipeline(steps=[('preprocessor', encoder_preprocessor),
+        
+        models = {
+            "RandomForestClassifier":Pipeline(steps=[('preprocessor', encoder_preprocessor),
                             ('classifier', RandomForestClassifier(
                                     n_estimators=self.hyperparameters.get('n_estimators', 100),
                                     max_depth=self.hyperparameters.get('max_depth', None),
                                     min_samples_split=self.hyperparameters.get('min_samples_split', 2),
                                     min_samples_leaf=self.hyperparameters.get('min_samples_leaf', 1),
                                     max_features=self.hyperparameters.get('max_features', 'sqrt')
-                            ))])
+                            ))]),
+            "GradientBoostingClassifier":Pipeline(steps=[('preprocessor', encoder_preprocessor),
+                        ('classifier', GradientBoostingClassifier(
+                            learning_rate= self.hyperparameters.get('learning_rate', 0.1),
+                            max_depth= self.hyperparameters.get('max_depth', 32),
+                            max_leaf_nodes =  self.hyperparameters.get('max_leaf_nodes', 1000)
+                        ))]),
+            "LogisticRegressionClassifier":Pipeline(steps=[('preprocessor', encoder_preprocessor),
+                        ('classifier', LogisticRegression(
+                            max_iter = self.hyperparameters.get('max_iter', 1000),
+                            penalty = self.hyperparameters.get('penalty', 'l2'),
+                            tol= self.hyperparameters.get('tol', 1e-5),
+                            C= self.hyperparameters.get("C", 1.0),
+                            solver=self.hyperparameters.get('solver', 'saga')
+                        ))]),
+            "HistGradientBoostingClassifier":Pipeline(steps=[('preprocessor', encoder_preprocessor),
+                        ('classifier', HistGradientBoostingClassifier(
+                            learning_rate= self.hyperparameters.get('learning_rate', 0.01),
+                            max_iter= self.hyperparameters.get('max_iter', 1000),
+                            max_depth= self.hyperparameters.get('max_depth', 16),
+                            l2_regularization= self.hyperparameters.get('l2_regularization', 0.5),
+                        ))]),
+            "MLPClassifier":Pipeline(steps=[('preprocessor', encoder_preprocessor),
+                        ('classifier', MLPClassifier(
+                            hidden_layer_sizes=self.hyperparameters.get('hidden_layer_sizes', (50,)),
+                            activation=self.hyperparameters.get('activation', 'relu'),
+                            solver=self.hyperparameters.get('solver', 'adam'),
+                            alpha=self.hyperparameters.get('alpha', 0.0001),
+                            learning_rate_init=self.hyperparameters.get('learning_rate_init', 0.001),
+                            max_iter=self.hyperparameters.get('max_iter', 200),
+                            batch_size=self.hyperparameters.get('batch_size', 'auto')
+                        ))])
+        }
+
+        self.model = models[model_type]
 
     def train(self):
         ''' Train the model on the provided dataset '''
@@ -111,7 +147,7 @@ def preprocess_data(df):
 def objective(trial):
     # model_type = trial.suggest_categorical('model_type', ['RandomForestClassifier', 'GradientBoosterClassifier', 'MLPClassifier'])
     
-    model_type = 'HistGradientBoosterClassifier'
+    model_type = 'GradientBoostingClassifier'
 
     hyperparameters = {}
 
@@ -124,48 +160,43 @@ def objective(trial):
             "max_features" : trial.suggest_categorical('max_features', ['sqrt', 'log2', None])
         }
         
-    elif model_type == 'GradientBoosterClassifier':
+    elif model_type == 'GradientBoostingClassifier':
         hyperparameters = {
             'learning_rate': trial.suggest_float('learning_rate', 0.01, 1.0),
-            'n_estimators': trial.suggest_int('n_estimators', 10, 500),
             'max_depth': trial.suggest_int('max_depth', 2, 32),
-            'min_samples_split': trial.suggest_int('min_samples_split', 2, 20),
-            'min_samples_leaf': trial.suggest_int('min_samples_leaf', 1, 20),
-            'max_features': trial.suggest_categorical('max_features', ['sqrt', 'log2', None]),
-            'subsample': trial.suggest_float('subsample', 0.5, 1.0)
+            'max_leaf_nodes' : trial.suggest_int('max_leaf_nodes', 2, 1000)
         }
     
     elif model_type == 'MLPClassifier':
         hyperparameters = {
-            "hidden_layer_sizes": eval(trial.suggest_categorical('MLPClassifier_hidden_layer_sizes', ['(50,)', '(100,)', '(50, 50)', '(100, 50)'])),
-            "activation": trial.suggest_categorical('MLPClassifier_activation', ['identity', 'logistic', 'tanh', 'relu']),
-            "solver": trial.suggest_categorical('MLPClassifier_solver', ['sgd', 'adam']),
-            "alpha": trial.suggest_float('MLPClassifier_alpha', 1e-5, 1e-1, log=True),
-            "learning_rate_init": trial.suggest_float('MLPClassifier_learning_rate_init', 1e-5, 1e-1, log=True),
-            "max_iter": trial.suggest_int('MLPClassifier_max_iter', 200, 1000),
-            "batch_size": trial.suggest_categorical('MLPClassifier_batch_size', [64, 128, 256, 'auto']),
+            "hidden_layer_sizes": eval(trial.suggest_categorical('hidden_layer_sizes', ['(50,)', '(100,)', '(50, 50)', '(100, 50)'])),
+            "activation": trial.suggest_categorical('activation', ['identity', 'logistic', 'tanh', 'relu']),
+            "solver": trial.suggest_categorical('solver', ['sgd', 'adam']),
+            "alpha": trial.suggest_float('alpha', 1e-5, 1e-1, log=True),
+            "learning_rate_init": trial.suggest_float('learning_rate_init', 1e-5, 1e-1, log=True),
+            "max_iter": trial.suggest_int('max_iter', 200, 1000),
+            "batch_size": trial.suggest_categorical('batch_size', [64, 128, 256, 'auto']),
         }
 
         if hyperparameters["solver"] == 'sgd':
-            hyperparameters["learning_rate"] = trial.suggest_categorical('MLPClassifier_learning_rate', ['constant', 'invscaling', 'adaptive'])
+            hyperparameters["learning_rate"] = trial.suggest_categorical('learning_rate', ['constant', 'invscaling', 'adaptive'])
+
     elif model_type == 'LogisticRegressionClassifier':
         hyperparameters = {
-            "learning_rate" : trial.suggest_float('learning_rate', 0.01, 1.0),
             "max_iter" : trial.suggest_int('max_iter', 10, 1000),
-            "max_depth" : trial.suggest_int('max_depth', 1, 32),
-            "min_samples_leaf" : trial.suggest_int('min_samples_leaf', 5, 100),
-            "l2_regularization" : trial.suggest_float('l2_regularization', 0.0, 1.0),
-            "max_bins" : trial.suggest_int('max_bins', 50, 255),
-            "min_samples_to_split" : trial.suggest_int('min_samples_to_split', 2, 100)
+            "penalty" : trial.suggest_categorical('penalty', [None, 'l2', 'l1']),
+            "tol" : trial.suggest_float('tol', 1e-6, 1e-4),
+            "C" : trial.suggest_float("C", 1.0, 10.0),
+            "solver" : trial.suggest_categorical("solver",['newton-cg','saga'])
         }
-    elif model_type == "HistGradientBoosterClassifier":
+
+        if hyperparameters['solver'] == 'newton-cg': hyperparameters['penalty'] = 'l2'
+    elif model_type == "HistGradientBoostingClassifier":
         hyperparameters = {
-            "learning_rate": trial.suggest_float('HistGradientBoostingClassifier_learning_rate', 0.01, 1.0),
-            "max_iter": trial.suggest_int('HistGradientBoostingClassifier_max_iter', 10, 1000),
-            "max_depth": trial.suggest_int('HistGradientBoostingClassifier_max_depth', 1, 32),
-            "min_samples_leaf": trial.suggest_int('HistGradientBoostingClassifier_min_samples_leaf', 5, 100),
-            "l2_regularization": trial.suggest_float('HistGradientBoostingClassifier_l2_regularization', 0.0, 1.0),
-            "max_bins": trial.suggest_int('HistGradientBoostingClassifier_max_bins', 50, 255),
+            "learning_rate": trial.suggest_float('learning_rate', 0.01, 1.0),
+            "max_iter": trial.suggest_int('max_iter', 10, 1000),
+            "max_depth": trial.suggest_int('max_depth', 1, 32),
+            "l2_regularization": trial.suggest_float('l2_regularization', 0.0, 1.0),
         }
 
     input = pd.read_csv('./Data/input.csv')[0:20000]
@@ -181,7 +212,7 @@ def objective(trial):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
     # Initialize and train your model
-    model = Model(X_train, y_train, X_test, y_test, hyperparameters=hyperparameters)
+    model = Model(X_train, y_train, X_test, y_test, hyperparameters=hyperparameters, model_type=model_type)
     model.train()  # Update this method to use the provided dataset
 
     # Predict and evaluate the model
