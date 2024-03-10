@@ -12,26 +12,47 @@
 - **`min_samples_leaf`**: The minimum number of samples required to be at a leaf node.
 - **`max_features`**: The number of features to consider when looking for the best split.
 
-### 3. **Support Vector Machines (SVM)**
-- **`C`**: Regularization parameter. The strength of the regularization is inversely proportional to C. Must be strictly positive.
-- **`kernel`**: Specifies the kernel type to be used in the algorithm (`'linear'`, `'poly'`, `'rbf'`, `'sigmoid'`, `'precomputed'`).
-- **`degree`** (for polynomial kernel): Degree of the polynomial kernel function.
-- **`gamma`** (for `'rbf'`, `'poly'`, and `'sigmoid'`): Kernel coefficient.
-
 ### 4. **Gradient Boosting Classifiers**
 - **`n_estimators`**: The number of boosting stages to be run.
 - **`learning_rate`**: Rate at which the contribution of each tree is shrunk.
 - **`max_depth`**: Maximum depth of the individual regression estimators.
 - **`min_samples_split`**: The minimum number of samples required to split an internal node.
 
-### 5. **K-Nearest Neighbors (KNN)**
-- **`n_neighbors`**: Number of neighbors to use.
-- **`weights`**: Weight function used in prediction (`'uniform'`, `'distance'`, or [callable]).
-- **`algorithm`**: Algorithm used to compute the nearest neighbors (`'auto'`, `'ball_tree'`, `'kd_tree'`, `'brute'`).
 
-### 6. **Neural Networks (via libraries like Keras or PyTorch)**
-- Network architecture (number of layers, types of layers, number of neurons in each layer).
-- **`learning_rate`**: Step size at each iteration while moving toward a minimum of a loss function.
-- **`batch_size`**: Number of samples per gradient update.
-- **`epochs`**: Number of epochs to train the model.
+
+
+
+### HistGradientBoostingClassifier Hyperparameters:
+
+- **`learning_rate`**: The rate at which the model learns. Lower values require more trees (`max_iter`) but can lead to better generalization.
+
+- **`max_iter`**: The maximum number of iterations (or trees) to be used. More iterations allow the model to capture more complex patterns but can lead to overfitting.
+
+- **`max_depth`**: The maximum depth of each tree. Controls the complexity of the model.
+
+- **`min_samples_leaf`**: The minimum number of samples required to be at a leaf node. Helps to control overfitting.
+
+- **`l2_regularization`**: The L2 regularization term on weights. Higher values make the model more conservative.
+
+- **`max_bins`**: The maximum number of bins used for binning the input features. Higher values allow capturing more information about the feature but increase computation time.
+
+- **`max_leaf_nodes`**: The maximum number of leaf nodes per tree. Can be used instead of `max_depth` to control the size of trees.
+
+### MLPClassifier Hyperparameters:
+
+- **`hidden_layer_sizes`**: The size of the hidden layers. For example, `(100,)` means one hidden layer with 100 neurons, and `(100, 50)` means two layers with 100 and 50 neurons, respectively.
+
+- **`activation`**: The activation function for the hidden layers. Options include `'identity'`, `'logistic'`, `'tanh'`, and `'relu'`.
+
+- **`solver`**: The solver for weight optimization. Options are `'lbfgs'` (an optimizer in the family of quasi-Newton methods), `'sgd'` (stochastic gradient descent), and `'adam'` (a stochastic gradient-based optimizer).
+
+- **`alpha`**: L2 penalty (regularization term) parameter.
+
+- **`learning_rate`**: Learning rate schedule for weight updates. Only used when `solver='sgd'`. Options include `'constant'`, `'invscaling'`, and `'adaptive'`.
+
+- **`learning_rate_init`**: The initial learning rate used. It controls the step-size in updating the weights.
+
+- **`max_iter`**: Maximum number of iterations. The solver iterates until convergence or this number of iterations.
+
+- **`beta_1`, `beta_2`**: Parameters for the 'adam' solver. `beta_1` is the exponential decay rate for estimates of the first moment vector in adam, while `beta_2` is the exponential decay rate for the second moment vector in adam.
 
